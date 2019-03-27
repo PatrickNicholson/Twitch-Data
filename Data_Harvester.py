@@ -6,12 +6,12 @@ import time
 import datetime
 import statistics
 import argparse
+import backoff
 from sqlalchemy import create_engine
 import pandas as pd
 
 '''
 To Do:
-    -change http response error handling (litl/backoff)
     -implement an error log file
 '''
 
@@ -27,28 +27,32 @@ def compareTopAndTotalGames(token, total_games):
         return total
     else:
         return total_games
-
+'''
 def getSleepTime(step, start_prog, end_prog):
     time = step.split(':')
+
     sec = (int(time[0])*3600) + (int(time[1])*60)
-    runtime = ((int(end_prog.hour)*3600) - (int(start_prog.hour)*3600)) + ((int(end_prog.minute)*60) - (int(start_prog.minute)*60))
+    startsec = (int(start_prog.hour)*3600) + (int(start_prog.minute)*60)
+    endsec = (int(end_prog.hour)*3600) + (int(end_prog.minute)*60)
+
+    for i in range(1, round(86400/sec)):
+        if( sec >= ((i*sec) - endsec) > 0 ):
+            return((i*sec) - endsec)
+
+    runtime = endsec - startsec
+
     return (sec - runtime)
-
+'''
+@backoff.on_exception(backoff.expo,requests.exceptions.RequestException,max_time=1000)
 def getData(url, client):
-    try:
-        headers = {'Accept' : 'application/vnd.twitchtv.v5+json', 'Client-ID' :client}
-        resp = requests.get(url, headers=headers)
-        if(resp.status_code != 200):
-            print(resp.status_code)
-            print(resp)
-            print(resp.headers)
-            sys.exit()
-        json_array = resp.json()
-        return json_array
-
-    except requests.exceptions.RequestException as err:
-        print(str(err))
-        return getData(url, client)  
+    headers = {'Accept' : 'application/vnd.twitchtv.v5+json', 'Client-ID' :client}
+    resp = requests.get(url, headers=headers)
+    if(resp.status_code != 200):
+        print(resp.status_code)
+        print(resp)
+        print(resp.headers)
+    json_array = resp.json()
+    return json_array
 
 def getGames(off_set, limit, token):  
     url = 'https://api.twitch.tv/kraken/games/top?' + 'offset=' + str(off_set) +'&limit=' + str(limit)
@@ -127,37 +131,34 @@ def getTopGames(total_games, token):
     return game_data
 
 def main(total_games, token, sample_size, tbl_name, eng):
-    print('starting')
     game_data = getTopGames(total_games, token)
-    print('working...')
     game_data = getStatistics(game_data, sample_size, token)
     game_frame = pd.DataFrame(game_data)
-    print('saving...')
     game_frame.to_sql(tbl_name, eng, if_exists='append')
-    print('Saved ' + str(len(game_data)) + ' games.')
 
 if(__name__ == '__main__'):
-    CLIENT_TOKEN = 'TOKEN' #change this into an environment variable
-    PASS_TOKEN = 'TOKEN'
-    USER_TOKEN = 'TOKEN'
-    TABLE_TOKEN = 'TOKEN'
-    IP_TOKEN = 'TOKEN'
-    PORT_TOKEN = 'TOKEN'
-
+    CLIENT_TOKEN = '' #change this into an environment variable
+    PASS_TOKEN = ''
+    USER_TOKEN = ''
+    TABLE_TOKEN = ''
+    IP_TOKEN = ''
+    PORT_TOKEN = '5432'
+    TOTAL_GAMES = 5000
+    SAMPLE_SIZE = 20000
 
     engine = create_engine('postgresql://' + USER_TOKEN + ':' + PASS_TOKEN + '@' + IP_TOKEN + ':' + PORT_TOKEN + '/' + TABLE_TOKEN)
 
-    TOTAL_GAMES = 3000
-    SAMPLE_SIZE = 20000
-    STEP = '3:00' #3 hours
+    total_games = compareTopAndTotalGames(CLIENT_TOKEN, TOTAL_GAMES)
+    main(total_games, CLIENT_TOKEN, SAMPLE_SIZE, TABLE_TOKEN, engine)
     
-    count = 0
+    '''
+    STEP = '3:00' #3 hours
     while(True):
         total_games = compareTopAndTotalGames(CLIENT_TOKEN, TOTAL_GAMES)
-        count += 1
         start = datetime.datetime.now()
         main(total_games, CLIENT_TOKEN, SAMPLE_SIZE, TABLE_TOKEN, engine)
         stop = datetime.datetime.now()
-        print(start)
-        print('Sleeping.. zzz...zzz...')
+        #print(start)
+        #print('Sleeping.. zzz...zzz...')
         time.sleep(getSleepTime(STEP,start,stop))
+    '''

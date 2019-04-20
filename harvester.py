@@ -132,14 +132,14 @@ if(__name__ == '__main__'):
     SAMPLE_SIZE = 20000
     
     parser = argparse.ArgumentParser(description='Environment variables')
-    parser.add_argument('client_token', type=str, help='Twitch client token')
-    parser.add_argument('pass_token', type=str, help='Pass token')
-    parser.add_argument('user_token', type=str, help='User token')
-    parser.add_argument('table_token', type=str, help='Table token')
-    parser.add_argument('db_host', type=str, help='The hostname for the postgres database')
-    parser.add_argument('db_port', type=int, help='The port of the Postgres database')
-    parser.add_argument('total_games', type=int, help='Total games to get data for')
-    parser.add_argument('sample_size', type=int, help='Sample size of the games')
+    parser.add_argument('--client-token', type=str, help='Twitch client token')
+    parser.add_argument('--pass-token', type=str, help='Pass token')
+    parser.add_argument('--user-token', type=str, help='User token')
+    parser.add_argument('--table-token', type=str, help='Table token')
+    parser.add_argument('--db-host', type=str, help='The hostname for the postgres database')
+    parser.add_argument('--db-port', type=int, help='The port of the Postgres database')
+    parser.add_argument('--total-games', type=int, help='Total games to get data for')
+    parser.add_argument('--sample-size', type=int, help='Sample size of the games')
 
     args = parser.parse_args()
 

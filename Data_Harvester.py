@@ -14,7 +14,7 @@ import pandas as pd
 To Do:
     -implement an error log file
 '''
-#yep?
+#fix here
 
 def getTotalOnTwitch(token):
     url = 'https://api.twitch.tv/kraken/games/top?&limit=1'
